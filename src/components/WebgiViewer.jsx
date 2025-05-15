@@ -24,8 +24,41 @@ import { setupScrollAnimation } from "../lib/scroll-animation";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const WebgiViewer = () => {
+const WebgiViewer = forwardRef((props, ref) => {
   const canvasRef = useRef(null);
+  const [viewerRef, setViewrRef] = useState(null);
+  const [targetRef, setTargetRef] = useState(null);
+  const [cameraRef, setCameraRef] = useState(null);
+  const [positionRef, setPositionRef] = useState(null);
+  const canvasContaninerRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    triggerPreview() {
+      canvasContaninerRef.current.style.pointerEvents = "all";
+      props.contentRef.current.style.opacity = "0";
+
+      gsap.to(positionRef, {
+        x: 13.04,
+        y: -2.01,
+        z: 2.29,
+        duration: 2,
+        onUpdate: () => {
+          if (viewerRef) {
+            viewerRef.setDirty();
+            cameraRef.positionTargetUpdated(true);
+          }
+        },
+      });
+      gsap.to(targetRef, {
+        x: 0.11,
+        y: 0.0,
+        z: 0.0,
+        duration: 2,
+      });
+
+      viewerRef.scene.activeCamera.setCameraOptions({ controlsEnabled: true });
+    },
+  }));
 
   const memoizedScrollAnimation = useCallback((position, target, onUpdate) => {
     if (position && target && onUpdate) {
@@ -38,9 +71,15 @@ const WebgiViewer = () => {
       canvas: canvasRef.current,
     });
 
+    setViewrRef(viewer);
+
     const camera = viewer.scene.activeCamera;
     const positon = camera.position;
     const target = camera.target;
+
+    setCameraRef(camera);
+    setPositionRef(positon);
+    setTargetRef(target);
 
     const manager = await viewer.addPlugin(AssetManagerPlugin);
     await viewer.addPlugin(GBufferPlugin);
@@ -83,10 +122,10 @@ const WebgiViewer = () => {
   }, []);
 
   return (
-    <div id="webgi-canvas-container">
+    <div ref={canvasContaninerRef} id="webgi-canvas-container">
       <canvas id="webgi-canvas" ref={canvasRef} />
     </div>
   );
-};
+});
 
 export default WebgiViewer;
